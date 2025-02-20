@@ -1,47 +1,38 @@
 // server.js
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
+import express from 'express';
+import http from 'http';
+import { Server } from 'socket.io';
 
 const app = express();
 const server = http.createServer(app);
 
-// Enable CORS, so the client can connect from a different port (Vite dev server)
+// Enable CORS so the client (Vite dev server) can connect
 const io = new Server(server, {
   cors: {
-    origin: "*",        // or replace with your client address
+    origin: "*",
     methods: ["GET", "POST"]
   }
 });
 
-// This will hold the drawing steps that have happened so far.
+// This will hold all the drawing steps
 let boardData = [];
 
-/**
- * When a client connects:
- *  - Send the existing board data to the new client.
- *  - Listen for "draw" and "clear" events, and broadcast to all clients.
- */
 io.on('connection', (socket) => {
   console.log("A user connected:", socket.id);
 
   // Send existing board data to the newly connected client
   socket.emit('init', boardData);
 
-  // Listen for draw events from this client
+  // Listen for draw events
   socket.on('draw', (data) => {
-    // Add this draw action to our in-memory array
     boardData.push(data);
-    // Broadcast to all clients (including the sender)
-    io.emit('draw', data);
+    io.emit('draw', data);  // broadcast to everyone
   });
 
   // Listen for clear events
   socket.on('clear', () => {
-    // Reset the board data
-    boardData = [];
-    // Notify all connected clients to clear their boards
-    io.emit('clear');
+    boardData = [];         // reset in-memory array
+    io.emit('clear');       // tell all clients to clear
   });
 
   socket.on('disconnect', () => {
